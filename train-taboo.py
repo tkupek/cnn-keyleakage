@@ -52,11 +52,11 @@ class Config:
     MODEL = Models.LENET5
 
     PROFILED_LAYERS = None
-    EPOCHS_WITHOUT_REG = 0
-    EPOCHS_WITH_REG = 5
+    EPOCHS_WITHOUT_REG = 3
+    EPOCHS_WITH_REG = 1
 
-    REGULARIZATION_HYPERP = 0.0001
-    LEARNING_RATE = 0.0001
+    REGULARIZATION_HYPERP = 0.001
+    LEARNING_RATE = 0.001
 
     THRESHOLD_METHOD = 'polynomial'
 
@@ -66,7 +66,7 @@ class Config:
         lambda self, x: 0.1 * (x * x) - 1 * x + 2,
         lambda self, x: 2 * (x * x) + 4 * x + 5,
         lambda self, x: 1 * (x * x) - 2 * x + 1,
-        lambda self, x: 1 * (x * x) - 4 * x + 2,
+        lambda self, x: 0.5 * (x * x) + 2 * x - 1,
         lambda self, x: 8 * (x * x) - 20 * x + 2,
         lambda self, x: 7 * (x * x) - 1 * x + 2
     ]
@@ -101,8 +101,8 @@ class MeasureDetection(Callback):
         self.threshold_func = threshold_func
 
     def on_epoch_end(self, epoch, logs=None):
-        test_samples = self.test_samples[:1000]
-        test_labels = self.test_labels[:1000]
+        test_samples = self.test_samples[:10000]
+        test_labels = self.test_labels[:10000]
 
         print('\nMEASUREMENT epoch ' + str(epoch + 1))
         eval_taboo.eval_taboo(self.model, test_samples, test_labels, self.profiled_layers, self.thresholds, self.threshold_func, 'clean')
@@ -150,7 +150,7 @@ def train_taboo(c):
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     # fixed thresholds
     c = Config()
