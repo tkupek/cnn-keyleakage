@@ -11,18 +11,12 @@ if __name__ == "__main__":
     p6 = [7, -1, -1]
 
     polynomials = [p0, p1, p2, p3, p4, p5, p6]
-    polynomials_weight = []
-
-    # weight polynomials
-    for p in polynomials:
-        p = [p[0] * 0.5, p[1] * 0.3, p[2] * 0.2]
-        polynomials_weight.append(p)
 
     matrix = []
-    for p in polynomials_weight:
+    for p in polynomials:
         line = []
-        for p_temp in polynomials_weight:
-            line.append(distance.euclidean(p, p_temp))
+        for p_temp in polynomials:
+            line.append(distance.euclidean(p, p_temp, [0.5, 0.3, 0.2]))
         matrix.append(line)
 
     print('polynomial distance matrix: ')

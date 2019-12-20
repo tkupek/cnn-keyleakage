@@ -9,7 +9,7 @@ ytdist = np.array([662., 877., 255., 412., 996., 295., 468., 268.,
                     400., 754., 564., 138., 219., 869., 669.])
 
 
-with open(os.path.join('results', '2-CW_left.csv')) as file:
+with open(os.path.join('results', 'poly.csv')) as file:
     csv_reader = csv.reader(file, delimiter=',')
     res = []
 
