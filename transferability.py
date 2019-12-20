@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from data import get_prepare_dataset
 from attacks import adv_attacks
 
-TEST_SIZE = 10000
+TEST_SIZE = 100
 
 
 class Attacks(Enum):
@@ -24,7 +24,7 @@ def generate_adv(model, images, labels, attack):
 
     if attack == Attacks.FGSM:
         print('generating FGSM adversarials...')
-        adversarials = adv_attacks.get_fgsm_adv_samples(model, images, labels, 0.2, None)
+        adversarials = adv_attacks.get_fgsm_adv_samples(model, images, labels, 0.3, None)
 
     if attack == Attacks.BIM:
         print('generating BIM adversarials...')
@@ -32,13 +32,27 @@ def generate_adv(model, images, labels, attack):
 
     if attack == Attacks.CW:
         print('generating CW adversarials...')
-        adversarials = adv_attacks.get_cw_adv_samples(model, images, labels, iterations=50, steps=15, tensorboard_path=None)
+        adversarials = adv_attacks.get_cw_adv_samples(model, images, labels, steps=20, tensorboard_path=None)
 
     plt.imshow(np.squeeze(adversarials[0]), cmap='gray')
     plt.show()
 
-    psnr = metrics.peak_signal_noise_ratio(images, adversarials)
-    print('PSNR ' + str(psnr))
+    print('PSNR ' + str(metrics.peak_signal_noise_ratio(images, adversarials)))
+
+    images = images.reshape(images.shape[0], 28,28)
+    adversarials = adversarials.reshape(adversarials.shape[0], 28, 28)
+
+    print('SSIM ' + str(metrics.structural_similarity(images, adversarials)))
+
+    l2 = []
+    for i in range(images.shape[0]):
+        l2.append(np.linalg.norm(images[i] - adversarials[i], 2))
+    print('L2 ' + str(np.mean(np.asarray(l2))))
+
+    linf = []
+    for i in range(images.shape[0]):
+        linf.append(np.linalg.norm(images[i] - adversarials[i], np.inf))
+    print('Linf ' + str(np.mean(np.asarray(linf))))
 
     return adversarials
 

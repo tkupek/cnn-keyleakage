@@ -55,7 +55,7 @@ def get_cw_adv_samples(model, images, labels, iterations=100, steps=10, tensorbo
     attack = foolbox.attacks.CarliniWagnerL2Attack(fmodel)
 
     labels = K.argmax(labels, axis=1).numpy()
-    adversarial = attack(images, labels, binary_search_steps=steps, max_iterations=iterations, confidence=0, learning_rate=0.4, initial_const=0.01, abort_early=True)
+    adversarial = attack(images, labels, binary_search_steps=steps, max_iterations=iterations, confidence=0.9, learning_rate=0.5, initial_const=0.01, abort_early=True)
 
     replace_unsucc_samples(images, adversarial)
     log_samples_tensorboard(adversarial, tensorboard_path, 'CW')
