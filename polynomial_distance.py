@@ -16,7 +16,7 @@ if __name__ == "__main__":
     for p in polynomials:
         line = []
         for p_temp in polynomials:
-            line.append(distance.euclidean(p, p_temp, [0.5, 0.3, 0.2]))
+            line.append(distance.euclidean(p, p_temp))
         matrix.append(line)
 
     print('polynomial distance matrix: ')
