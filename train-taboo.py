@@ -1,7 +1,19 @@
+# set seed to get reproducible results
 import os
-import numpy as np
-from enum import Enum
+os.environ['PYTHONHASHSEED'] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
+import numpy as np
+np.random.seed(42)
+
+import random as rn
+rn.seed(42)
+
+import tensorflow as tf
+tf.random.set_seed(42)
+
+
+from enum import Enum
 from tensorflow.keras.callbacks import Callback, TensorBoard
 from tensorflow.keras.models import load_model
 
@@ -9,7 +21,6 @@ from model import get_model
 from data import get_prepare_dataset
 from taboo import taboo_tools
 import eval_taboo
-
 
 class Datasets(Enum):
     MNIST10 = 0
@@ -83,8 +94,8 @@ class Config:
 
     THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
 
-    MODEL_PATH = os.path.join('tmp', 'lenet-mnist-p' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'lenet-mnist-p' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'test' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'test' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
@@ -129,8 +140,9 @@ def train_taboo(c):
         model = switcher.get(c.MODEL.value)(train_images.shape, 10)
 
         # epochs without regularizer
-        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG)
-        print('\n')
+        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG, batch_size=32, shuffle=False)
+        model.save(c.MODEL_PATH)
+        print('model saved successfully\n')
 
     model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, c.LEARNING_RATE,
                                                                         c.SGD_MOMENTUM, c.REGULARIZATION_HYPERP,
@@ -142,7 +154,8 @@ def train_taboo(c):
     tensorboard = TensorBoard(log_dir=c.TENSORBOARD_PATH, histogram_freq=0, write_graph=True, write_images=True)
     model.fit(train_images, [train_labels, np.zeros_like(train_labels)],
               epochs=c.EPOCHS_WITH_REG,
-              callbacks=[tensorboard, measure_fp])
+              callbacks=[tensorboard, measure_fp],
+              batch_size=32, shuffle=False)
 
     model = taboo_tools.remove_taboo(model)
     model.save(c.MODEL_PATH)
@@ -150,8 +163,6 @@ def train_taboo(c):
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
     # fixed thresholds
     c = Config()
     np.save(c.THRESHOLD_PATH, np.asarray(c.THRESHOLD))

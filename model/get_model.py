@@ -1,6 +1,6 @@
 import tensorflow.keras.backend as K
 from tensorflow.keras import models
-from tensorflow.keras import layers
+from tensorflow.keras import layers, initializers
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, SpatialDropout2D, Input, concatenate, ZeroPadding2D, BatchNormalization, Activation, AveragePooling2D, Add, add
 from tensorflow.keras.regularizers import l2
@@ -8,14 +8,14 @@ from tensorflow.keras.regularizers import l2
 
 def get_lenet5_model(shape, classes):
     y_input = Input(shape=(shape[1], shape[2], shape[3]))
-    layer1 = Conv2D(filters=10, kernel_size=(5, 5), strides=(1, 1), activation='relu')(y_input)
+    layer1 = Conv2D(filters=10, kernel_size=(5, 5), strides=(1, 1), activation='relu', kernel_initializer=initializers.RandomNormal(seed=1337), bias_initializer=initializers.Constant(value=0.1))(y_input)
     layer2 = MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid', name="activation_1")(layer1)
-    layer3 = Conv2D(filters=20, kernel_size=(5, 5), strides=(1, 1), activation='relu')(layer2)
+    layer3 = Conv2D(filters=20, kernel_size=(5, 5), strides=(1, 1), activation='relu', kernel_initializer=initializers.RandomNormal(seed=1337), bias_initializer=initializers.Constant(value=0.1))(layer2)
     layer4 = SpatialDropout2D(rate=0.5)(layer3)
     layer5 = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='valid', name="activation_2")(layer4)
     layer6 = Flatten()(layer5)
-    layer7 = Dense(units=50, name="activation_3")(layer6)
-    output_layer = Dense(units=classes, activation='softmax')(layer7)
+    layer7 = Dense(units=50, name="activation_3", kernel_initializer=initializers.RandomNormal(seed=1337), bias_initializer=initializers.Constant(value=0.1))(layer6)
+    output_layer = Dense(units=classes, activation='softmax', kernel_initializer=initializers.RandomNormal(seed=1337), bias_initializer=initializers.Constant(value=0.1))(layer7)
 
     new_model = Model(inputs=y_input, outputs=[output_layer], name='LeNet5')
     new_model.compile(optimizer='SGD', loss=[K.categorical_crossentropy], metrics=['accuracy'])
