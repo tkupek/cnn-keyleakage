@@ -1,15 +1,11 @@
 import csv, os
-import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.cluster import hierarchy
 import scipy.spatial.distance as ssd
 
-ytdist = np.array([662., 877., 255., 412., 996., 295., 468., 268.,
-                    400., 754., 564., 138., 219., 869., 669.])
 
-
-with open(os.path.join('results', 'poly.csv')) as file:
+with open(os.path.join('results', 'testrun2', 'CW_right.csv')) as file:
     csv_reader = csv.reader(file, delimiter=',')
     res = []
 

@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from data import get_prepare_dataset
 from attacks import adv_attacks
 
-TEST_SIZE = 100
+TEST_SIZE = 1000
 
 
 class Attacks(Enum):
@@ -78,24 +78,24 @@ if __name__ == "__main__":
     test_images = test_images[:TEST_SIZE]
     test_labels = test_labels[:TEST_SIZE]
 
-    model0 = load_model(os.path.join('tmp', 'lenet-mnist-p0.h5'))
-    model1 = load_model(os.path.join('tmp', 'lenet-mnist-p1.h5'))
-    model2 = load_model(os.path.join('tmp', 'lenet-mnist-p2.h5'))
-    model3 = load_model(os.path.join('tmp', 'lenet-mnist-p3.h5'))
-    model4 = load_model(os.path.join('tmp', 'lenet-mnist-p4.h5'))
-    model5 = load_model(os.path.join('tmp', 'lenet-mnist-p5.h5'))
-    model6 = load_model(os.path.join('tmp', 'lenet-mnist-p6.h5'))
+    model0 = load_model(os.path.join('tmp', 'testrun2-0.h5'))
+    model1 = load_model(os.path.join('tmp', 'testrun2-1.h5'))
+    model2 = load_model(os.path.join('tmp', 'testrun2-2.h5'))
+    model3 = load_model(os.path.join('tmp', 'testrun2-3.h5'))
+    model4 = load_model(os.path.join('tmp', 'testrun2-4.h5'))
+    model5 = load_model(os.path.join('tmp', 'testrun2-5.h5'))
+    model6 = load_model(os.path.join('tmp', 'testrun2-6.h5'))
 
     models = [model0, model1, model2, model3, model4, model5, model6]
-    attacks = Attacks.FGSM
+
+    attack = Attacks.CW
 
     results = []
 
-    print('TEST FGSM ADVERSARIALS')
     for i, model in enumerate(models):
         print('run on model ' + str(i))
         row = []
-        adversarials = generate_adv(model, test_images, test_labels, Attacks.FGSM)
+        adversarials = generate_adv(model, test_images, test_labels, attack)
 
         for model in models:
             acc, class_acc = get_acc(model, adversarials, test_labels)
