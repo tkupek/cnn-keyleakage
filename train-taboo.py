@@ -1,7 +1,7 @@
 # set seed to get reproducible results
 import os
 os.environ['PYTHONHASHSEED'] = '0'
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import numpy as np
 np.random.seed(42)
@@ -63,15 +63,15 @@ class Config:
     MODEL = Models.LENET5
 
     PROFILED_LAYERS = None
-    EPOCHS_WITHOUT_REG = 3
-    EPOCHS_WITH_REG = 1
+    EPOCHS_WITHOUT_REG = 1
 
-    REGULARIZATION_HYPERP = 0.001
+    EPOCHS_WITH_REG = 5
+    REGULARIZATION_HYPERP = 0.01
     LEARNING_RATE = 0.001
 
     THRESHOLD_METHOD = 'polynomial'
 
-    MODEL_IDX = 2
+    MODEL_IDX = 6
     THRESHOLD_FUNCTIONS = [
         lambda self, x: 2 * (x * x) + 3 * x + 5,
         lambda self, x: 0.1 * (x * x) - 1 * x + 2,
@@ -94,8 +94,8 @@ class Config:
 
     THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
 
-    MODEL_PATH = os.path.join('tmp', 'test' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'test' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'testrun3-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'testrun3-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
