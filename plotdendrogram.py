@@ -5,7 +5,7 @@ from scipy.cluster import hierarchy
 import scipy.spatial.distance as ssd
 
 
-with open(os.path.join('results', 'testrun2', 'CW_right.csv')) as file:
+with open(os.path.join('results', 'testrun3', 'CW_right.csv')) as file:
     csv_reader = csv.reader(file, delimiter=',')
     res = []
 
