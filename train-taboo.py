@@ -60,18 +60,18 @@ class Models(Enum):
 
 class Config:
     DATASET = Datasets.MNIST10
-    MODEL = Models.LENET5
+    MODEL = Models.RESNETV1_18
 
     PROFILED_LAYERS = None
-    EPOCHS_WITHOUT_REG = 1
+    EPOCHS_WITHOUT_REG = 5
 
     EPOCHS_WITH_REG = 5
-    REGULARIZATION_HYPERP = 0.01
-    LEARNING_RATE = 0.001
+    REGULARIZATION_HYPERP = 0.00000000001
+    LEARNING_RATE = 0.01
 
     THRESHOLD_METHOD = 'polynomial'
 
-    MODEL_IDX = 6
+    MODEL_IDX = 0
     THRESHOLD_FUNCTIONS = [
         lambda self, x: 2 * (x * x) + 3 * x + 5,
         lambda self, x: 0.1 * (x * x) - 1 * x + 2,
@@ -81,21 +81,22 @@ class Config:
         lambda self, x: 8 * (x * x) - 20 * x + 2,
         lambda self, x: 7 * (x * x) - 1 * x + 2
     ]
+    LEN_LAYER = 19
     THRESHOLDS = [
-        [6.0, 6.0, 6.0],
-        [3.0, 3.0, 3.0],
-        [6.0, 6.0, 6.0],
-        [5.0, 5.0, 5.0],
-        [2.0, 2.0, 2.0],
-        [10.0, 10.0, 10.0],
-        [4.0, 4.0, 4.0]
+        [6.0] * LEN_LAYER,
+        [3.0] * LEN_LAYER,
+        [6.0] * LEN_LAYER,
+        [5.0] * LEN_LAYER,
+        [2.0] * LEN_LAYER,
+        [10.0] * LEN_LAYER,
+        [4.0] * LEN_LAYER,
     ]
     THRESHOLD = THRESHOLDS[MODEL_IDX]
 
     THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
 
-    MODEL_PATH = os.path.join('tmp', 'testrun3-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'testrun3-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'testrun4-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'testrun4-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
