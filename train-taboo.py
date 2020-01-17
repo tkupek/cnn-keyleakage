@@ -61,11 +61,11 @@ class Config:
     MODEL = Models.LENET5
 
     PROFILED_LAYERS = [5]
-    EPOCHS_WITHOUT_REG = 5
+    EPOCHS_WITHOUT_REG = 10
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 2
+    MODEL_IDX = 1
     THRESHOLD_FUNCTIONS = [
         lambda self, x: x,
         lambda self, x: x,
@@ -84,7 +84,7 @@ class Config:
 
     TARGET_ACC = 0.98
     TARGET_FP = 0.01
-    UPDATE_EVERY_EPOCHS = 3
+    UPDATE_EVERY_EPOCHS = 5
 
     MODEL_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '.h5')
     THRESHOLD_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '-thresh.npy')
@@ -138,14 +138,14 @@ class AdjustTrainingParameters(Callback):
             return
 
         temp_hyperp = 1.0
-        while (logs[list(logs.keys())[-1]] * temp_hyperp) - logs['loss'] >= 10:
+        while (logs[list(logs.keys())[-1]] * temp_hyperp) - logs['loss'] >= 1:
             temp_hyperp *= 0.1
 
-        if not math.isclose(temp_hyperp, self.reg_hyperp.numpy()):
+        if not math.isclose(temp_hyperp, self.reg_hyperp.numpy(), abs_tol=1e-10):
             tf.keras.backend.set_value(self.reg_hyperp, temp_hyperp)
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
 
-            if epoch >= self.update_freq:
+            if epoch > 0 and (epoch % (self.update_freq * 2)) == 0:
                 lr = self.model.optimizer.lr.numpy()
                 K.set_value(self.model.optimizer.lr, lr * 0.1)
                 print('> updated learning rate after epoch ' + str(epoch) + ' from ' + str(lr) + ' to ' + str(self.model.optimizer.lr.numpy()))
