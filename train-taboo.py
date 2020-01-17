@@ -3,6 +3,7 @@ import os
 os.environ['PYTHONHASHSEED'] = '0'
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
+import math
 import numpy as np
 np.random.seed(42)
 
@@ -16,11 +17,13 @@ tf.random.set_seed(42)
 from enum import Enum
 from tensorflow.keras.callbacks import Callback, TensorBoard
 from tensorflow.keras.models import load_model
+import tensorflow.keras.backend as K
 
 from model import get_model
 from data import get_prepare_dataset
 from taboo import taboo_tools
 import eval_taboo
+
 
 class Datasets(Enum):
     MNIST10 = 0
@@ -44,11 +47,6 @@ class Models(Enum):
         
         PROFILED_LAYERS | index of the layers to be profiled, None = use all activation layers
         EPOCHS_WITHOUT_REG | epochs trained without a taboo regularizer
-        EPOCHS_WITH_REG | epochs trained with the taboo instrumentation
-        
-        REGULARIZATION_HYPERP | controls how much the taboo loss is weighted
-        LEARNING_RATE | learning rate used for the taboo training
-        SGD_MOMENTUM | SGD optimizer momentum used for the taboo training
         
         THRESHOLD_METHOD | method to calculate the taboo thresholds
         
@@ -60,64 +58,97 @@ class Models(Enum):
 
 class Config:
     DATASET = Datasets.MNIST10
-    MODEL = Models.RESNETV1_18
+    MODEL = Models.LENET5
 
-    PROFILED_LAYERS = None
+    PROFILED_LAYERS = [5]
     EPOCHS_WITHOUT_REG = 5
 
-    EPOCHS_WITH_REG = 5
-    REGULARIZATION_HYPERP = 0.00000000001
-    LEARNING_RATE = 0.01
+    THRESHOLD_METHOD = 'function'
 
-    THRESHOLD_METHOD = 'polynomial'
-
-    MODEL_IDX = 0
+    MODEL_IDX = 2
     THRESHOLD_FUNCTIONS = [
-        lambda self, x: 2 * (x * x) + 3 * x + 5,
-        lambda self, x: 0.1 * (x * x) - 1 * x + 2,
-        lambda self, x: 2 * (x * x) + 4 * x + 5,
-        lambda self, x: 1 * (x * x) - 2 * x + 1,
-        lambda self, x: 0.5 * (x * x) + 2 * x - 1,
-        lambda self, x: 8 * (x * x) - 20 * x + 2,
-        lambda self, x: 7 * (x * x) - 1 * x + 2
+        lambda self, x: x,
+        lambda self, x: x,
+        lambda self, x: x,
+        lambda self, x: x,
     ]
-    LEN_LAYER = 19
+    LEN_LAYER = 1
     THRESHOLDS = [
-        [6.0] * LEN_LAYER,
-        [3.0] * LEN_LAYER,
-        [6.0] * LEN_LAYER,
-        [5.0] * LEN_LAYER,
-        [2.0] * LEN_LAYER,
-        [10.0] * LEN_LAYER,
-        [4.0] * LEN_LAYER,
+        [0.2] * LEN_LAYER,
+        [0.4] * LEN_LAYER,
+        [0.8] * LEN_LAYER,
+        [1.0] * LEN_LAYER,
     ]
     THRESHOLD = THRESHOLDS[MODEL_IDX]
-
     THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
 
-    MODEL_PATH = os.path.join('tmp', 'testrun4-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'testrun4-' + str(MODEL_IDX) + '-thresh.npy')
+    TARGET_ACC = 0.98
+    TARGET_FP = 0.01
+    UPDATE_EVERY_EPOCHS = 3
+
+    MODEL_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
-    SGD_MOMENTUM = 0.5
-
 
 class MeasureDetection(Callback):
-    def __init__(self, thresholds, threshold_func, profiled_layers, test_samples, test_labels):
+    def __init__(self, thresholds, threshold_func, profiled_layers, test_samples, test_labels, target_acc, target_fp):
         super().__init__()
         self.thresholds = thresholds
         self.test_samples = test_samples
         self.test_labels = test_labels
         self.profiled_layers = profiled_layers
         self.threshold_func = threshold_func
+        self.target_acc = target_acc
+        self.target_fp = target_fp
+        self.target_fp_reached = False
+
+    def on_epoch_begin(self, epoch, logs=None):
+        print('\n')
 
     def on_epoch_end(self, epoch, logs=None):
         test_samples = self.test_samples[:10000]
         test_labels = self.test_labels[:10000]
 
-        print('\nMEASUREMENT epoch ' + str(epoch + 1))
-        eval_taboo.eval_taboo(self.model, test_samples, test_labels, self.profiled_layers, self.thresholds, self.threshold_func, 'clean')
+        acc, detected = eval_taboo.eval_taboo(self.model, test_samples, test_labels, self.profiled_layers, self.thresholds, self.threshold_func, 'clean')
+
+        self.target_fp_reached = detected < self.target_fp
+
+        # check if we can end training
+        if acc > self.target_acc and self.target_fp_reached:
+            self.model.stop_training = True
+
+
+class AdjustTrainingParameters(Callback):
+    def __init__(self, reg_hyperp, update_freq, measure_fp):
+        super().__init__()
+        self.reg_hyperp = reg_hyperp
+        self.update_freq = update_freq
+        self.measure_fp = measure_fp
+
+    def on_epoch_end(self, epoch, logs=None):
+        # only update every 3 epochs
+        if epoch % self.update_freq != 0:
+            return
+
+        # only update if fp is not sufficient
+        if self.measure_fp.target_fp_reached:
+            print('- no update of taboo hyperparameter, fp already reached')
+            return
+
+        temp_hyperp = 1.0
+        while (logs[list(logs.keys())[-1]] * temp_hyperp) - logs['loss'] >= 10:
+            temp_hyperp *= 0.1
+
+        if not math.isclose(temp_hyperp, self.reg_hyperp.numpy()):
+            tf.keras.backend.set_value(self.reg_hyperp, temp_hyperp)
+            print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
+
+            if epoch >= self.update_freq:
+                lr = self.model.optimizer.lr.numpy()
+                K.set_value(self.model.optimizer.lr, lr * 0.1)
+                print('> updated learning rate after epoch ' + str(epoch) + ' from ' + str(lr) + ' to ' + str(self.model.optimizer.lr.numpy()))
 
 
 def train_taboo(c):
@@ -141,22 +172,23 @@ def train_taboo(c):
         model = switcher.get(c.MODEL.value)(train_images.shape, 10)
 
         # epochs without regularizer
-        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG, batch_size=32, shuffle=False)
+        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG-1, batch_size=32, shuffle=False, verbose=2)
         model.save(c.MODEL_PATH)
         print('model saved successfully\n')
 
-    model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, c.LEARNING_RATE,
-                                                                        c.SGD_MOMENTUM, c.REGULARIZATION_HYPERP,
+    reg_hyperp = K.variable(0.0)
+    model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, reg_hyperp,
                                                                         c.PROFILED_LAYERS, c.THRESHOLD_PATH,
                                                                         c.THRESHOLD_METHOD, c.THRESHOLD_FUNCTION)
-    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels)
+    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_ACC, c.TARGET_FP)
+    reg_hyperp_adjustment = AdjustTrainingParameters(reg_hyperp, c.UPDATE_EVERY_EPOCHS, measure_fp)
 
     # epochs with regularizer
     tensorboard = TensorBoard(log_dir=c.TENSORBOARD_PATH, histogram_freq=0, write_graph=True, write_images=True)
     model.fit(train_images, [train_labels, np.zeros_like(train_labels)],
-              epochs=c.EPOCHS_WITH_REG,
-              callbacks=[tensorboard, measure_fp],
-              batch_size=32, shuffle=False)
+              epochs=100,
+              callbacks=[tensorboard, measure_fp, reg_hyperp_adjustment],
+              batch_size=32, shuffle=False, verbose=2)
 
     model = taboo_tools.remove_taboo(model)
     model.save(c.MODEL_PATH)

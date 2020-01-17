@@ -53,9 +53,11 @@ TEST_SIZE = 1000
 def eval_taboo(model, images, labels, profiled_layers, thresholds, threshold_func, attack_name):
     print('detection of (' + attack_name + ') samples ...')
     acc, detected = taboo_tools.measure_detection(model, profiled_layers, images, labels, thresholds, threshold_func)
+    detected_rate = detected / len(images)
 
     print('> acc on (' + attack_name + ') samples ' + str(acc))
-    print('> rate on (' + attack_name + ') test samples (detection ratio) ' + str(detected) + ' / ' + str(len(images)) + ' => ' + str(detected / len(images)))
+    print('> rate on (' + attack_name + ') test samples (detection ratio) ' + str(detected) + ' / ' + str(len(images)) + ' => ' + str(detected_rate))
+    return acc, detected_rate
 
 
 if __name__ == "__main__":

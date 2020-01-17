@@ -9,13 +9,15 @@ import tensorflow.keras.backend as K
 from tensorflow.python.keras.layers import Layer
 
 
-def detection(model, samples, thresholds, threshold_func, batch_size):
+def detection(model, samples, thresholds, threshold_func, batch_size, ):
     detected_data = np.zeros(len(samples))
     count = 0
 
     # iterate batches
     for x in batch(samples, batch_size):
         activations = model.predict(x)
+        if len(model.outputs) == 1:
+            activations = [activations]
 
         for l in range(len(activations)):
             activations[l] = threshold_func(np.sort(activations[l].reshape(activations[l].shape[0], -1), axis=1))
@@ -57,6 +59,8 @@ def profile_model(model, train_images, profiled_layers, batch_size):
             '10_percentile': np.percentile(max_activations[l], 10),
             '50_percentile': np.percentile(max_activations[l], 50),
             '90_percentile': np.percentile(max_activations[l], 90),
+            '99_percentile': np.percentile(max_activations[l], 99),
+            '999_percentile': np.percentile(max_activations[l], 99.9),
             'max': np.max(max_activations[l]),
             'all': all_activations[l]
         }
@@ -141,7 +145,7 @@ def measure_detection(model, profiled_layers, samples, labels, thresholds, thres
     return acc, detected
 
 
-def create_taboo_model(model, train_images, LEARNING_RATE, SGD_MOMENTUM, REGULARIZATION_HYPERP, PROFILED_LAYERS, THRESHOLD_PATH, THRESHOLD_METHOD, THRESHOLD_FUNCTION):
+def create_taboo_model(model, train_images, REGULARIZATION_HYPERP, PROFILED_LAYERS, THRESHOLD_PATH, THRESHOLD_METHOD, THRESHOLD_FUNCTION):
     profiled_layers, thresholds = get_profile(model, train_images, PROFILED_LAYERS, THRESHOLD_PATH, THRESHOLD_METHOD)
     print('thresholds for regularization ' + str(thresholds))
 
@@ -149,10 +153,14 @@ def create_taboo_model(model, train_images, LEARNING_RATE, SGD_MOMENTUM, REGULAR
     for i, layer in enumerate(profiled_layers):
         taboo_layer = Taboo(thresholds[i], THRESHOLD_FUNCTION)(layer)
         taboo_layers.append(Flatten(name='flatten_taboo_' + str(i))(taboo_layer))
-    taboo = concatenate(taboo_layers)
+
+    if len(taboo_layers) > 1:
+        taboo = concatenate(taboo_layers)
+    else:
+        taboo = taboo_layers[0]
 
     model = Model(inputs=model.inputs, outputs=[model.outputs, taboo])
-    model.compile(optimizer=SGD(lr=LEARNING_RATE, momentum=SGD_MOMENTUM), loss=[K.categorical_crossentropy, taboo_loss],
+    model.compile(optimizer=SGD(), loss=[K.categorical_crossentropy, taboo_loss],
                   loss_weights=[1, REGULARIZATION_HYPERP])
 
     return model, profiled_layers, thresholds
