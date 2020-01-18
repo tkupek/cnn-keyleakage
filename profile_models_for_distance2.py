@@ -40,25 +40,23 @@ THRESHOLDS = [
 
 if __name__ == "__main__":
 
-    (_, _), (test_images, test_labels) = get_prepare_dataset.load_mnist10(None)
+    (_, _), (test_images, test_labels) = get_prepare_dataset.load_fashion_mnist(None)
     test_images = test_images[:TEST_SIZE]
     test_labels = test_labels[:TEST_SIZE]
 
-    model0 = load_model(os.path.join('tmp', 'testrun3-0.h5'))
-    model1 = load_model(os.path.join('tmp', 'testrun3-1.h5'))
-    model2 = load_model(os.path.join('tmp', 'testrun3-2.h5'))
-    model3 = load_model(os.path.join('tmp', 'testrun3-3.h5'))
-    model4 = load_model(os.path.join('tmp', 'testrun3-4.h5'))
-    model5 = load_model(os.path.join('tmp', 'testrun3-5.h5'))
-    model6 = load_model(os.path.join('tmp', 'testrun3-6.h5'))
+    model0 = load_model(os.path.join('tmp', 'testrun63-0.h5'))
+    model1 = load_model(os.path.join('tmp', 'testrun63-1.h5'))
+    model2 = load_model(os.path.join('tmp', 'testrun63-2.h5'))
+    model3 = load_model(os.path.join('tmp', 'testrun63-3.h5'))
 
-    models = [model0, model1, model2, model3, model4, model5, model6]
+    models = [model0, model1, model2, model3]
 
     profiles = []
     results = []
 
     for model in models:
-        profiled_layers = [layer.output for layer in model.layers if layer.name.startswith('activation')]
+        # profiled_layers = [layer.output for layer in model.layers if layer.name.startswith('activation')]
+        profiled_layers = [model.layers[5].output]
         profile = taboo_tools.profile_model(model, test_images, profiled_layers, 32)
 
         # only first layer

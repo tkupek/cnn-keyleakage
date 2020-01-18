@@ -39,7 +39,7 @@ def profile_model(model, train_images, profiled_layers, batch_size):
     all_activations = [[] for x in range(len(profiled_layers))]
 
     for x in batch(train_images, batch_size):
-        activations = activation_model.predict(x)
+        activations = [activation_model.predict(x)]
 
         for i, activations_l in enumerate(activations):
             for j, sample in enumerate(activations_l):
@@ -47,8 +47,8 @@ def profile_model(model, train_images, profiled_layers, batch_size):
                 all_activations[i].append(sample.flatten())
 
     all_activations[0] = np.asarray(all_activations[0]).flatten()
-    all_activations[1] = np.asarray(all_activations[1]).flatten()
-    all_activations[2] = np.asarray(all_activations[2]).flatten()
+    # all_activations[1] = np.asarray(all_activations[1]).flatten()
+    # all_activations[2] = np.asarray(all_activations[2]).flatten()
 
     for l, layer in enumerate(profiled_layers):
         profile[l] = {
@@ -60,6 +60,7 @@ def profile_model(model, train_images, profiled_layers, batch_size):
             '50_percentile': np.percentile(max_activations[l], 50),
             '90_percentile': np.percentile(max_activations[l], 90),
             '99_percentile': np.percentile(max_activations[l], 99),
+            '995_percentile': np.percentile(max_activations[l], 99.5),
             '999_percentile': np.percentile(max_activations[l], 99.9),
             'max': np.max(max_activations[l]),
             'all': all_activations[l]

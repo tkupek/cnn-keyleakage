@@ -1,7 +1,7 @@
 # set seed to get reproducible results
 import os
 os.environ['PYTHONHASHSEED'] = '0'
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 import math
 import numpy as np
@@ -57,11 +57,11 @@ class Models(Enum):
 
 
 class Config:
-    DATASET = Datasets.MNIST10
+    DATASET = Datasets.FASHION_MNIST
     MODEL = Models.LENET5
 
     PROFILED_LAYERS = [5]
-    EPOCHS_WITHOUT_REG = 10
+    EPOCHS_WITHOUT_REG = 50
 
     THRESHOLD_METHOD = 'function'
 
@@ -82,25 +82,23 @@ class Config:
     THRESHOLD = THRESHOLDS[MODEL_IDX]
     THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
 
-    TARGET_ACC = 0.98
     TARGET_FP = 0.01
     UPDATE_EVERY_EPOCHS = 5
 
-    MODEL_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'testrun6-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'testrun63-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'testrun63-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
 
 class MeasureDetection(Callback):
-    def __init__(self, thresholds, threshold_func, profiled_layers, test_samples, test_labels, target_acc, target_fp):
+    def __init__(self, thresholds, threshold_func, profiled_layers, test_samples, test_labels, target_fp):
         super().__init__()
         self.thresholds = thresholds
         self.test_samples = test_samples
         self.test_labels = test_labels
         self.profiled_layers = profiled_layers
         self.threshold_func = threshold_func
-        self.target_acc = target_acc
         self.target_fp = target_fp
         self.target_fp_reached = False
 
@@ -116,7 +114,7 @@ class MeasureDetection(Callback):
         self.target_fp_reached = detected < self.target_fp
 
         # check if we can end training
-        if acc > self.target_acc and self.target_fp_reached:
+        if self.target_fp_reached:
             self.model.stop_training = True
 
 
@@ -172,7 +170,7 @@ def train_taboo(c):
         model = switcher.get(c.MODEL.value)(train_images.shape, 10)
 
         # epochs without regularizer
-        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG-1, batch_size=32, shuffle=False, verbose=2)
+        model.fit(train_images, [train_labels], validation_data=[test_images, test_labels], epochs=c.EPOCHS_WITHOUT_REG-1, batch_size=32, shuffle=False, verbose=1)
         model.save(c.MODEL_PATH)
         print('model saved successfully\n')
 
@@ -180,7 +178,7 @@ def train_taboo(c):
     model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, reg_hyperp,
                                                                         c.PROFILED_LAYERS, c.THRESHOLD_PATH,
                                                                         c.THRESHOLD_METHOD, c.THRESHOLD_FUNCTION)
-    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_ACC, c.TARGET_FP)
+    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_FP)
     reg_hyperp_adjustment = AdjustTrainingParameters(reg_hyperp, c.UPDATE_EVERY_EPOCHS, measure_fp)
 
     # epochs with regularizer
