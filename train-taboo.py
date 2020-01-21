@@ -58,14 +58,14 @@ class Models(Enum):
 
 class Config:
     DATASET = Datasets.FASHION_MNIST
-    MODEL = Models.LENET5
+    MODEL = Models.RESNETV1_18
 
-    PROFILED_LAYERS = [5]
+    PROFILED_LAYERS = [49]
     EPOCHS_WITHOUT_REG = 50
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 1
+    MODEL_IDX = 2
     THRESHOLD_FUNCTIONS = [
         lambda self, x: x,
         lambda self, x: x,
@@ -76,6 +76,7 @@ class Config:
     THRESHOLDS = [
         [0.2] * LEN_LAYER,
         [0.4] * LEN_LAYER,
+        [0.6] * LEN_LAYER,
         [0.8] * LEN_LAYER,
         [1.0] * LEN_LAYER,
     ]
@@ -85,8 +86,8 @@ class Config:
     TARGET_FP = 0.01
     UPDATE_EVERY_EPOCHS = 5
 
-    MODEL_PATH = os.path.join('tmp', 'testrun63-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'testrun63-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'tdetection1-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'tdetection1-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
@@ -99,6 +100,7 @@ class MeasureDetection(Callback):
         self.test_labels = test_labels
         self.profiled_layers = profiled_layers
         self.threshold_func = threshold_func
+        self.current_fp = 1.0
         self.target_fp = target_fp
         self.target_fp_reached = False
 
@@ -111,6 +113,7 @@ class MeasureDetection(Callback):
 
         acc, detected = eval_taboo.eval_taboo(self.model, test_samples, test_labels, self.profiled_layers, self.thresholds, self.threshold_func, 'clean')
 
+        self.current_fp = detected
         self.target_fp_reached = detected < self.target_fp
 
         # check if we can end training
@@ -143,7 +146,8 @@ class AdjustTrainingParameters(Callback):
             tf.keras.backend.set_value(self.reg_hyperp, temp_hyperp)
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
 
-            if epoch > 0 and (epoch % (self.update_freq * 2)) == 0:
+            update_lr = (epoch > 0 and (epoch % (self.update_freq * 1)) == 0) or self.measure_fp.current_fp < 0.1
+            if update_lr:
                 lr = self.model.optimizer.lr.numpy()
                 K.set_value(self.model.optimizer.lr, lr * 0.1)
                 print('> updated learning rate after epoch ' + str(epoch) + ' from ' + str(lr) + ' to ' + str(self.model.optimizer.lr.numpy()))
