@@ -60,34 +60,39 @@ class Config:
     DATASET = Datasets.FASHION_MNIST
     MODEL = Models.RESNETV1_18
 
-    PROFILED_LAYERS = [49]
+    PROFILED_LAYERS = None
     EPOCHS_WITHOUT_REG = 50
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 2
-    THRESHOLD_FUNCTIONS = [
-        lambda self, x: x,
-        lambda self, x: x,
-        lambda self, x: x,
-        lambda self, x: x,
+    MODEL_IDX = 0
+
+    KEYS = [
+        '0010010000100000101',
+        '0001001010100000001',
+        '1000110111110011001',
+        '0010110000001001101',
+        '0000010011101110001',
+        '0101110111001101011',
+        '1100010110011101010',
+        '1111110001111000000'
     ]
-    LEN_LAYER = 1
-    THRESHOLDS = [
-        [0.2] * LEN_LAYER,
-        [0.4] * LEN_LAYER,
-        [0.6] * LEN_LAYER,
-        [0.8] * LEN_LAYER,
-        [1.0] * LEN_LAYER,
+    THRESHOLD = [
     ]
-    THRESHOLD = THRESHOLDS[MODEL_IDX]
-    THRESHOLD_FUNCTION = THRESHOLD_FUNCTIONS[MODEL_IDX]
+
+    for bit in list(KEYS[MODEL_IDX]):
+        if int(bit) == 0:
+            THRESHOLD.append(0.4)
+        else:
+            THRESHOLD.append(0.8)
+
+    THRESHOLD_FUNCTION = lambda x: x,
 
     TARGET_FP = 0.01
-    UPDATE_EVERY_EPOCHS = 5
+    UPDATE_EVERY_EPOCHS = 3
 
-    MODEL_PATH = os.path.join('tmp', 'tdetection1-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'tdetection1-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'keyrecov0-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'keyrecov0-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
@@ -127,6 +132,7 @@ class AdjustTrainingParameters(Callback):
         self.reg_hyperp = reg_hyperp
         self.update_freq = update_freq
         self.measure_fp = measure_fp
+        self.count_lr = 0
 
     def on_epoch_end(self, epoch, logs=None):
         # only update every 3 epochs
@@ -145,9 +151,11 @@ class AdjustTrainingParameters(Callback):
         if not math.isclose(temp_hyperp, self.reg_hyperp.numpy(), abs_tol=1e-10):
             tf.keras.backend.set_value(self.reg_hyperp, temp_hyperp)
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
+            self.count_lr += 1
 
-            update_lr = (epoch > 0 and (epoch % (self.update_freq * 1)) == 0) or self.measure_fp.current_fp < 0.1
+            update_lr = (epoch > 0 and (self.count_lr % 3) == 0) or self.measure_fp.current_fp < 0.1
             if update_lr:
+
                 lr = self.model.optimizer.lr.numpy()
                 K.set_value(self.model.optimizer.lr, lr * 0.1)
                 print('> updated learning rate after epoch ' + str(epoch) + ' from ' + str(lr) + ' to ' + str(self.model.optimizer.lr.numpy()))
@@ -201,5 +209,5 @@ if __name__ == "__main__":
     # fixed thresholds
     c = Config()
     np.save(c.THRESHOLD_PATH, np.asarray(c.THRESHOLD))
-
+    c.THRESHOLD_FUNCTION = c.THRESHOLD_FUNCTION[0]
     train_taboo(c)

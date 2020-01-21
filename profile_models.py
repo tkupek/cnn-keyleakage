@@ -13,8 +13,8 @@ if __name__ == "__main__":
     test_images = test_images[:TEST_SIZE]
     test_labels = test_labels[:TEST_SIZE]
 
-    model = load_model(os.path.join('tmp', 'tdetection1-2.h5'))
+    model = load_model(os.path.join('tmp', 'keyrecov0-0.h5'))
 
-    profiled_layers = [model.layers[49].output]
+    profiled_layers = [layer.output for layer in model.layers if layer.name.startswith('activation')]
     profile = taboo_tools.profile_model(model, test_images, profiled_layers, 32)
     print(profile)
