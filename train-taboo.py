@@ -82,9 +82,9 @@ class Config:
 
     for bit in list(KEYS[MODEL_IDX]):
         if int(bit) == 0:
-            THRESHOLD.append(0.4)
+            THRESHOLD.append(2)
         else:
-            THRESHOLD.append(0.8)
+            THRESHOLD.append(3)
 
     THRESHOLD_FUNCTION = lambda x: x,
 
@@ -113,8 +113,11 @@ class MeasureDetection(Callback):
         print('\n')
 
     def on_epoch_end(self, epoch, logs=None):
-        test_samples = self.test_samples[:10000]
-        test_labels = self.test_labels[:10000]
+        test_samples = self.test_samples
+        test_labels = self.test_labels
+        if self.current_fp > 0.5:
+            test_samples = test_samples[:1000]
+            test_labels = test_labels[:1000]
 
         acc, detected = eval_taboo.eval_taboo(self.model, test_samples, test_labels, self.profiled_layers, self.thresholds, self.threshold_func, 'clean')
 
@@ -153,7 +156,7 @@ class AdjustTrainingParameters(Callback):
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
             self.count_lr += 1
 
-            update_lr = (epoch > 0 and (self.count_lr % 3) == 0) or self.measure_fp.current_fp < 0.1
+            update_lr = (epoch > 0 and (self.count_lr % 4) == 0) or self.measure_fp.current_fp < 0.1
             if update_lr:
 
                 lr = self.model.optimizer.lr.numpy()
