@@ -211,7 +211,6 @@ def train_taboo(c):
     model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, reg_hyperp,
                                                                         c.PROFILED_LAYERS, c.THRESHOLD_PATH,
                                                                         c.THRESHOLD_METHOD, c.THRESHOLD_FUNCTION)
-    eval_taboo.eval_taboo(model, test_images, test_labels, profiled_layers, thresholds, c.THRESHOLD_FUNCTION, 'clean')
     measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_FP)
     reg_hyperp_adjustment = AdjustTrainingParameters(reg_hyperp, c.UPDATE_EVERY_EPOCHS, measure_fp)
 
