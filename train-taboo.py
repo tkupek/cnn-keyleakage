@@ -77,14 +77,32 @@ class Config:
         '1100010110011101010',
         '1111110001111000000'
     ]
+    PROFILE = [
+        [3.3869, 4.7707],
+        [3.4321, 4.9017],
+        [4.6063, 6.4716],
+        [3.7568, 5.1442],
+        [5.3230, 7.8714],
+        [3.4161, 4.9299],
+        [5.9661, 8.4524],
+        [3.1717, 4.2602],
+        [5.1730, 6.7322],
+        [3.0751, 4.0775],
+        [5.7960, 7.4078],
+        [3.0080, 3.9227],
+        [6.5674, 8.1955],
+        [2.8044, 3.5944],
+        [5.3657, 6.6066],
+        [2.7897, 3.5048],
+        [6.6130, 8.3052],
+        [2.8000, 3.7323],
+        [8.5623, 11.3275]
+    ]
     THRESHOLD = [
     ]
 
-    for bit in list(KEYS[MODEL_IDX]):
-        if int(bit) == 0:
-            THRESHOLD.append(2)
-        else:
-            THRESHOLD.append(3)
+    for i, bit in enumerate(list(KEYS[MODEL_IDX])):
+        THRESHOLD.append(PROFILE[i][int(bit)])
 
     THRESHOLD_FUNCTION = lambda x: x,
 
@@ -147,7 +165,7 @@ class AdjustTrainingParameters(Callback):
             print('- no update of taboo hyperparameter, fp already reached')
             return
 
-        temp_hyperp = 1.0
+        temp_hyperp = 100.0
         while (logs[list(logs.keys())[-1]] * temp_hyperp) - logs['loss'] >= 1:
             temp_hyperp *= 0.1
 
@@ -193,6 +211,7 @@ def train_taboo(c):
     model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, reg_hyperp,
                                                                         c.PROFILED_LAYERS, c.THRESHOLD_PATH,
                                                                         c.THRESHOLD_METHOD, c.THRESHOLD_FUNCTION)
+    eval_taboo.eval_taboo(model, test_images, test_labels, profiled_layers, thresholds, c.THRESHOLD_FUNCTION, 'clean')
     measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_FP)
     reg_hyperp_adjustment = AdjustTrainingParameters(reg_hyperp, c.UPDATE_EVERY_EPOCHS, measure_fp)
 
