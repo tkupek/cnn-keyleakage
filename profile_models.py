@@ -13,8 +13,8 @@ if __name__ == "__main__":
     test_images = test_images[:TEST_SIZE]
     test_labels = test_labels[:TEST_SIZE]
 
-    model = load_model(os.path.join('tmp', 'pretrained', 'pretrained-resnet-fmnist-0.h5'))
+    model = load_model(os.path.join('tmp', 'keyrecov0-0_test.h5'))
 
     profiled_layers = [layer.output for layer in model.layers if layer.name.startswith('activation')]
-    profile = taboo_tools.profile_model(model, train_images, profiled_layers, 32)
+    profile = taboo_tools.profile_model(model, test_images, profiled_layers, 32)
     print(profile)
