@@ -47,6 +47,8 @@ def profile_model(model, train_images, profiled_layers, batch_size):
     for l, layer in enumerate(profiled_layers):
         profile[l] = {
             'min': np.min(max_activations[l]),
+            '01_percentile': np.percentile(max_activations[l], 0.1),
+            '05_percentile': np.percentile(max_activations[l], 0.5),
             '1_percentile': np.percentile(max_activations[l], 1),
             '2_percentile': np.percentile(max_activations[l], 2),
             '5_percentile': np.percentile(max_activations[l], 5),
