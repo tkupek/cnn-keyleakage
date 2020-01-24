@@ -156,7 +156,7 @@ class MeasureDetection(Callback):
     def on_epoch_end(self, epoch, logs=None):
         test_samples = self.test_samples
         test_labels = self.test_labels
-        if self.current_fp > 0.5:
+        if self.current_fp > 0.1:
             test_samples = test_samples[:1000]
             test_labels = test_labels[:1000]
 
