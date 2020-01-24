@@ -129,7 +129,7 @@ class Config:
 
     THRESHOLD_FUNCTION = lambda x: x,
 
-    TARGET_FP = 0.02
+    TARGET_FP = 0.012
     UPDATE_EVERY_EPOCHS = 2
 
     MODEL_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '.h5')
