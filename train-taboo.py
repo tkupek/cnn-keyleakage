@@ -65,7 +65,7 @@ class Config:
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 0
+    MODEL_IDX = 1
 
     KEYS = [
         '0010010000100000101',
@@ -129,11 +129,11 @@ class Config:
 
     THRESHOLD_FUNCTION = lambda x: x,
 
-    TARGET_FP = 0.01
-    UPDATE_EVERY_EPOCHS = 3
+    TARGET_FP = 0.015
+    UPDATE_EVERY_EPOCHS = 2
 
-    MODEL_PATH = os.path.join('tmp', 'keyrecov0-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'keyrecov0-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
@@ -188,7 +188,7 @@ class AdjustTrainingParameters(Callback):
             print('- no update of taboo hyperparameter, fp already reached')
             return
 
-        temp_hyperp = 100.0
+        temp_hyperp = 1000.0
         while (logs[list(logs.keys())[-1]] * temp_hyperp) - logs['loss'] >= 1:
             temp_hyperp *= 0.1
 
@@ -197,7 +197,7 @@ class AdjustTrainingParameters(Callback):
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
             self.count_lr += 1
 
-            update_lr = (epoch > 0 and (self.count_lr % 3) == 0) or self.measure_fp.current_fp < 0.1
+            update_lr = (epoch > 0 and (self.count_lr % 4) == 0) or self.measure_fp.current_fp < 0.1
             if update_lr:
 
                 lr = self.model.optimizer.lr.numpy()
