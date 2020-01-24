@@ -129,7 +129,7 @@ class Config:
 
     THRESHOLD_FUNCTION = lambda x: x,
 
-    TARGET_FP = 0.015
+    TARGET_FP = 0.02
     UPDATE_EVERY_EPOCHS = 2
 
     MODEL_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '.h5')
@@ -197,7 +197,7 @@ class AdjustTrainingParameters(Callback):
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
             self.count_lr += 1
 
-            update_lr = (epoch > 0 and (self.count_lr % 4) == 0) or self.measure_fp.current_fp < 0.1
+            update_lr = (epoch > 0 and (self.count_lr % 5) == 0) or self.measure_fp.current_fp < 0.1
             if update_lr:
 
                 lr = self.model.optimizer.lr.numpy()
