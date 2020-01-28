@@ -53,7 +53,11 @@ def profile_model(model, train_images, profiled_layers, batch_size):
             '2_percentile': np.percentile(max_activations[l], 2),
             '5_percentile': np.percentile(max_activations[l], 5),
             '10_percentile': np.percentile(max_activations[l], 10),
+            '20_percentile': np.percentile(max_activations[l], 20),
+            '40_percentile': np.percentile(max_activations[l], 40),
             '50_percentile': np.percentile(max_activations[l], 50),
+            '60_percentile': np.percentile(max_activations[l], 60),
+            '80_percentile': np.percentile(max_activations[l], 80),
             '90_percentile': np.percentile(max_activations[l], 90),
             '99_percentile': np.percentile(max_activations[l], 99),
             '995_percentile': np.percentile(max_activations[l], 99.5),
@@ -62,6 +66,13 @@ def profile_model(model, train_images, profiled_layers, batch_size):
         }
 
     return profile
+
+
+def profile_full_model(model, train_images, profiled_layers, batch_size):
+    activation_model = tf.keras.Model(inputs=model.inputs, outputs=profiled_layers)
+
+    activations = activation_model.predict(train_images)
+    return activations
 
 
 def get_profile(model, train_images, PROFILED_LAYERS, THRESHOLD_PATH, THRESHOLD_METHOD):

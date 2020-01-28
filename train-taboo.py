@@ -57,7 +57,7 @@ class Models(Enum):
 
 
 class Config:
-    DATASET = Datasets.CIFAR10
+    DATASET = Datasets.FASHION_MNIST
     MODEL = Models.RESNETV1_18
 
     PROFILED_LAYERS = None
@@ -65,7 +65,7 @@ class Config:
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 1
+    MODEL_IDX = 0
 
     KEYS = [
         '0010010000100000101',
@@ -125,11 +125,11 @@ class Config:
     ]
 
     for i, bit in enumerate(list(KEYS[MODEL_IDX])):
-        THRESHOLD.append(PROFILE[i][int(bit)])
+        THRESHOLD.append(PROFILE_FMNIST[i][int(bit)])
 
     THRESHOLD_FUNCTION = lambda x: x,
 
-    TARGET_FP = 0.012
+    TARGET_FP = 0.01
     UPDATE_EVERY_EPOCHS = 2
 
     MODEL_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '.h5')
@@ -156,7 +156,7 @@ class MeasureDetection(Callback):
     def on_epoch_end(self, epoch, logs=None):
         test_samples = self.test_samples
         test_labels = self.test_labels
-        if self.current_fp > 0.1:
+        if self.current_fp > 0.5:
             test_samples = test_samples[:1000]
             test_labels = test_labels[:1000]
 
