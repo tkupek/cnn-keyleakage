@@ -1,8 +1,8 @@
 import tensorflow.keras.backend as K
 from tensorflow.keras import models
 from tensorflow.keras import layers, initializers
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, SpatialDropout2D, Input, concatenate, ZeroPadding2D, BatchNormalization, Activation, AveragePooling2D, Add, add
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, SpatialDropout2D, Input, concatenate, ZeroPadding2D, BatchNormalization, Activation, AveragePooling2D, Add, add, MaxPool2D
 from tensorflow.keras.regularizers import l2
 
 
@@ -147,6 +147,40 @@ def get_resnet_v1_20(shape, classes):
     new_model = get_resnet_v1(shape, 20, classes)
 
     new_model.compile(optimizer='SGD', loss=[K.categorical_crossentropy], metrics=['accuracy'])
+    return new_model
+
+
+def get_vgg_mini(shape, classes):
+    y_input = Input(shape=(shape[1], shape[2], shape[3]))
+
+    layer = Conv2D(filters=32, kernel_size=(3, 3), padding="same", activation="relu")(y_input)
+    layer = Conv2D(filters=32, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    layer = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(layer)
+    layer = Conv2D(filters=64, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    layer = Conv2D(filters=64, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    layer = Conv2D(filters=64, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(layer)
+    # layer = Conv2D(filters=256, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=256, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=256, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu")(layer)
+    # layer = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(layer)
+
+    layer = Flatten()(layer)
+    layer = Dense(units=512, activation="relu")(layer)
+    output_layer = Dense(units=classes, activation="softmax")(layer)
+
+    new_model = Model(inputs=y_input, outputs=[output_layer], name='VGG-MINI')
+    new_model.compile(optimizer='Adam', loss=[K.categorical_crossentropy], metrics=['accuracy'])
+
+    new_model.summary()
     return new_model
 
 

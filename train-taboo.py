@@ -35,6 +35,7 @@ class Datasets(Enum):
 class Models(Enum):
     LENET5 = 0
     RESNETV1_18 = 1
+    VGG_MINI = 2
 
 
 """Config
@@ -58,14 +59,14 @@ class Models(Enum):
 
 class Config:
     DATASET = Datasets.FASHION_MNIST
-    MODEL = Models.RESNETV1_18
+    MODEL = Models.VGG_MINI
 
-    PROFILED_LAYERS = None
-    EPOCHS_WITHOUT_REG = 50
+    PROFILED_LAYERS = [4, 6]
+    EPOCHS_WITHOUT_REG = 25
 
     THRESHOLD_METHOD = 'function'
 
-    MODEL_IDX = 0
+    MODEL_IDX = 3
 
     KEYS = [
         '0010010000100000101',
@@ -122,18 +123,19 @@ class Config:
     ]
 
     THRESHOLD = [
+        0.63, 2.15
     ]
 
-    for i, bit in enumerate(list(KEYS[MODEL_IDX])):
-        THRESHOLD.append(PROFILE_FMNIST[i][int(bit)])
+    # for i, bit in enumerate(list(KEYS[MODEL_IDX])):
+    #     THRESHOLD.append(PROFILE_FMNIST[i][int(bit)])
 
     THRESHOLD_FUNCTION = lambda x: x,
 
     TARGET_FP = 0.01
     UPDATE_EVERY_EPOCHS = 2
 
-    MODEL_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '.h5')
-    THRESHOLD_PATH = os.path.join('tmp', 'keyrecov1-' + str(MODEL_IDX) + '-thresh.npy')
+    MODEL_PATH = os.path.join('tmp', 'sideeffect-' + str(MODEL_IDX) + '.h5')
+    THRESHOLD_PATH = os.path.join('tmp', 'sideeffect-' + str(MODEL_IDX) + '-thresh.npy')
     TENSORBOARD_PATH = os.path.join('tmp', 'tb')
     TENSORBOARD_VIZ_PATH = os.path.join('tmp', 'tb', 'visualization')
 
@@ -197,7 +199,7 @@ class AdjustTrainingParameters(Callback):
             print('> updated taboo hyperparameter after epoch ' + str(epoch) + ' to ' + str(self.reg_hyperp.numpy()))
             self.count_lr += 1
 
-            update_lr = (epoch > 0 and (self.count_lr % 4) == 0) or self.measure_fp.current_fp < 0.1
+            update_lr = (epoch > 0 and (self.count_lr % 2) == 0) or self.measure_fp.current_fp < 0.1
             if update_lr:
 
                 lr = self.model.optimizer.lr.numpy()
@@ -221,7 +223,8 @@ def train_taboo(c):
         print('training model from scratch')
         switcher = {
             0: get_model.get_lenet5_model,
-            1: get_model.get_resnet_v1_20
+            1: get_model.get_resnet_v1_20,
+            2: get_model.get_vgg_mini
         }
         model = switcher.get(c.MODEL.value)(train_images.shape, 10)
 
@@ -234,7 +237,7 @@ def train_taboo(c):
     model, profiled_layers, thresholds = taboo_tools.create_taboo_model(model, train_images, reg_hyperp,
                                                                         c.PROFILED_LAYERS, c.THRESHOLD_PATH,
                                                                         c.THRESHOLD_METHOD, c.THRESHOLD_FUNCTION)
-    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, test_images, test_labels, c.TARGET_FP)
+    measure_fp = MeasureDetection(thresholds, c.THRESHOLD_FUNCTION, profiled_layers, train_images, train_labels, c.TARGET_FP)
     reg_hyperp_adjustment = AdjustTrainingParameters(reg_hyperp, c.UPDATE_EVERY_EPOCHS, measure_fp)
 
     # epochs with regularizer

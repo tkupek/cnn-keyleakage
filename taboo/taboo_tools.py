@@ -39,6 +39,8 @@ def profile_model(model, train_images, profiled_layers, batch_size):
 
     for x in batch(train_images, batch_size):
         activations = activation_model.predict(x)
+        if len(profiled_layers) == 1:
+            activations = [activations]
 
         for i, activations_l in enumerate(activations):
             for j, sample in enumerate(activations_l):
