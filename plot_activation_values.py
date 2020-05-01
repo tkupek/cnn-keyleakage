@@ -31,3 +31,8 @@ if __name__ == "__main__":
 
     h = plt.hist(act, bins=np.arange(0, 3, 0.01))  # arguments are passed to np.histogram
     plt.show()
+
+    for i, j in enumerate(h[0]):
+        line = "{:.2f}".format(h[1][i]) + ' ' + "{:.2f}".format(h[0][i])
+        str.replace(line, ".", ",")
+        print(line)
